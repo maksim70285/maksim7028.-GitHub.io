@@ -1,0 +1,207 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конкурс красоты</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f8f8;
+            text-align: center;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        .photo-upload {
+            margin-top: 20px;
+        }
+        input[type="file"], input[type="text"], input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+        .photo-gallery {
+            margin-top: 30px;
+        }
+        .photo-item {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+            width: 200px;
+        }
+        .photo-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .photo-info {
+            margin-top: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .ranking {
+            margin-top: 40px;
+            text-align: left;
+        }
+        .ranking table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .ranking th, .ranking td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .ranking th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Конкурс красоты</h1>
+        
+        <!-- Форма для загрузки фото и данных -->
+        <div class="photo-upload">
+            <h2>Загрузите ваше фото для участия в конкурсе</h2>
+            <form id="photo-form" enctype="multipart/form-data">
+                <input type="file" id="photo-upload" accept="image/*" required>
+                <input type="text" id="name" placeholder="Имя" required>
+                <input type="text" id="surname" placeholder="Фамилия" required>
+                <input type="text" id="city" placeholder="Город" required>
+                <input type="number" id="age" placeholder="Возраст" required min="1">
+                <button type="submit">Отправить фото</button>
+            </form>
+        </div>
+
+        <!-- Галерея фото участников -->
+        <div class="photo-gallery" id="photo-gallery">
+            <h2>Галерея участников</h2>
+            <!-- Фото будут добавляться сюда после загрузки -->
+        </div>
+
+        <!-- Статистика -->
+        <div class="ranking" id="ranking">
+            <h2>Статистика голосования</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Место</th>
+                        <th>Имя</th>
+                        <th>Фамилия</th>
+                        <th>Город</th>
+                        <th>Возраст</th>
+                        <th>Голосов</th>
+                    </tr>
+                </thead>
+                <tbody id="ranking-list">
+                    <!-- Строки с участниками и голосами будут добавляться сюда -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];  // Массив для хранения участников и их голосов
+        let participantId = 0;  // Идентификатор каждого участника
+        let userVotes = 0; // Счётчик голосов текущего пользователя
+
+        // Функция для отправки фото и данных
+        document.getElementById('photo-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const photoInput = document.getElementById('photo-upload');
+            const file = photoInput.files[0];
+            const name = document.getElementById('name').value;
+            const surname = document.getElementById('surname').value;
+            const city = document.getElementById('city').value;
+            const age = document.getElementById('age').value;
+
+            if (file && name && surname && city && age) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const imageUrl = event.target.result;
+
+                    // Добавление участника в массив
+                    participants.push({
+                        id: participantId++,
+                        name: name,
+                        surname: surname,
+                        city: city,
+                        age: age,
+                        votes: 0,
+                        image: imageUrl
+                    });
+
+                    const photoGallery = document.getElementById('photo-gallery');
+                    const newPhoto = document.createElement('div');
+                    newPhoto.classList.add('photo-item');
+                    newPhoto.innerHTML = `
+                        <img src="${imageUrl}" alt="Фото участника">
+                        <div class="photo-info">
+                            <p>Имя: ${name}</p>
+                            <p>Фамилия: ${surname}</p>
+                            <p>Город: ${city}</p>
+                            <p>Возраст: ${age}</p>
+                            <button onclick="vote(${participantId - 1})" id="vote-btn-${participantId - 1}">Голосовать за</button>
+                        </div>
+                    `;
+                    photoGallery.appendChild(newPhoto);
+
+                    updateRanking();  // Обновление таблицы с рейтингом
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Пожалуйста, заполните все поля.');
+            }
+        });
+
+        // Функция для голосования
+        function vote(id) {
+            if (userVotes < 2) {
+                participants[id].votes += 1;
+                userVotes += 1;
+                document.getElementById(`vote-btn-${id}`).disabled = true; // Отключаем кнопку после голосования
+                updateRanking();  // Обновление таблицы с рейтингом
+            } else {
+                alert('Вы можете проголосовать только 2 раза.');
+            }
+        }
+
+        // Функция для обновления таблицы с рейтингом
+        function updateRanking() {
+            const rankingList = document.getElementById('ranking-list');
+            rankingList.innerHTML = '';
+
+            // Сортируем участников по количеству голосов
+            const sortedParticipants = participants.sort((a, b) => b.votes - a.votes);
+
+            // Добавляем данные участников в таблицу
+            sortedParticipants.forEach((participant, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${participant.name}</td>
+                    <td>${participant.surname}</td>
+                    <td>${participant.city}</td>
+                    <td>${participant.age}</td>
+                    <td>${participant.votes}</td>
+                `;
+                rankingList.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
